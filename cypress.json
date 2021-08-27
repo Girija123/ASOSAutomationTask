@@ -1,0 +1,18 @@
+{
+    "testFiles": "**/*.feature",
+    "viewportWidth": 1920,
+    "viewportHeight": 1080,
+    "projectId": "",    
+    "video": false,
+    "retries": {
+      "runMode": 1,
+      "openMode": 1
+    },
+    "defaultCommandTimeout": 6000,
+    "env": {
+      "allure": true,
+      "allureResultsPath": "allure-results",
+      "allureLogCypress":true,
+      "allureAddVideoOnPass": false
+  }
+}

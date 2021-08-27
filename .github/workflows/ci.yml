@@ -1,0 +1,61 @@
+name: ci
+on: [workflow_dispatch] 
+jobs:
+  build-and-test:
+    strategy:
+      # do not stop the matrix if one of the jobs fails
+      fail-fast: false
+      matrix:
+        browser: [chrome, electron]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 
+        uses: actions/checkout@v2
+
+      - name: Cache dependencies 
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache
+            ~/.npm
+          # use key string with "v1" for simple cache invalidation
+          # use precise key to avoid cache "snowballing" 
+          # https://glebbahmutov.com/blog/do-not-let-cypress-cache-snowball/
+          key: dependencies-v1-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: browser-actions/setup-chromium@latest
+        if: matrix.browser == 'chrome'
+    
+      - name: Run test on Chrome
+        if: matrix.browser == 'chrome'
+        run: npx cypress run --record --browser chrome
+        env:
+          # pass the record key as environment variable
+          # during this CI step
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+
+      - name: Run test on electron
+        if: matrix.browser == 'electron'
+        run: npx cypress run --record 
+        env:
+          # pass the record key as environment variable
+          # during this CI step
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+      
+      - name: Upload any screenshots and videos 
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: test-artifacts
+          path: |
+            cypress/videos
+            cypress/screenshots
+            
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          files: results/**/*.xml
